@@ -51,3 +51,48 @@ context.rect(10,10,100,100)
 context.stroke() // 没调用beginPath 此时描边会将第一个矩形描边重绘
 ```
 + fill 填充路径时使用“非零环绕规则”
++ 绘制1像素宽的线条，需要定位到某个像素的中间即整数+0.5
++ 在默认情况下，剪辑区域的大小与canvas一致，除非你手动调用clip()方法设置当前路径与当前剪辑区域的交集
+### 文本
+|与文本相关的属性方法|
+|---|
+|strokeText(text, x, y, width)|
+|fillText(text, x, y, width)|
+|measureText(text)|
+|font|
+|textAlign|
+|textBaseline|
++ font属性不支持inherit initial，另外在canvas设置line-height时，浏览器会忽略其值，规范要求浏览器必须将该值设置为normal
++ textAlign属性默认值是start，当canvas的dir属性是ltr时left=start，反之，同理
++ 在使用measureText()方法时先设置好字型，它总是基于当前字型计算宽度
++ 如果要渲染或移除文本，必须将剪辑区域所覆盖的整个canvas范围都替换掉
+### 图像与视频
++ 图像的绘制效果受制于阴影、剪辑区域、图像合成等属性，但不会考虑当前路径
++ getImageData()返回的对象的data属性，包含各个设备像素数值的数组,width、height属性单位是像素
++ putImageData(image, dx, dy, dirtyX, dirtyY, width, height)后四个参数表示以设备像素为单位的脏矩形，并且该函数不受全局设置的影响
++ canvas允许绘制不属于自己域中的图像，但是不能通过api操作其他域的图像，origin-clean默认true，当是其他域下的图片时，会被置成false
+>性能分析
+
+1. putImageData()总要比drawImage()慢，而且drawImage()支持canvas
+2. 将canvas绘制到自身很耗时，绘制canvas时对其缩放也很耗时
+3. 遍历图像数据时，应避免直接访问对象属性，应该将其放到局部变量中
+4. 应该使用循环计数器遍历完整像素，i+=4,而非i++
+5. 不要频繁的调用getImageData()
+### 动画
++ 制作动画不用setTimeout setInterval,因为浏览器为了节省电力消耗，可以拉长执行代码的间隔时间，也就是“强制规定时间间隔的下限”
++ 制作动画时处理背景
+
+1. 将所有内容擦除，并重新绘制
+2. 仅重绘内容发生改变的区域，即利用剪辑区域
+3. 从离屏缓冲区将内容变化的背景复制到屏幕上，简称“图块复制”
+>一般来说图块复制要比剪辑区域快，但是它需要一个离屏canvas，会占据更多内存
+
++ 双缓冲技术，解决clearRect()方法可能带来的白屏闪烁，该方案浏览器已经内置
++ 基于时间的运动，即动画中物体每秒移动的像素p恒定，每帧移动的像素v = p / fps
++ 时间轴扭曲函数，实际都是基于linear动画效果的时间映射函数，类似于在匀速直线运动的基础上衍生出各种加速，匀加速，变速运动
+### 碰撞
+>检测方法
+1. 外接矩形检测或者外接圆
+2. 光线投射法
+3. 分离轴定理只适用于凸多边形
+向量的数量积可以用来计算投影
